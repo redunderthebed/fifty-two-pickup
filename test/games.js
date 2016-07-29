@@ -122,6 +122,12 @@ describe('Games', function(){
         });
 
         it('lists the active instances a user is involved in', function (done) {
+            api.get('/instance/' + userId)
+                .set('x-access-token', authToken)
+                .end(function(err, res){
+                    console.log("Player instances response", res.body);
+                    expect(res.body.ok).to.be.ok;
+                });
             expect(implementation).to.exist;
             done();
         });
@@ -131,7 +137,7 @@ describe('Games', function(){
             done();
         })
 
-        it('lists the old actions a user was involved in', function(done){
+        it('lists the old instances a user was involved in', function(done){
             expect(implementation).to.exist;
             done();
         })
@@ -141,10 +147,14 @@ describe('Games', function(){
             done();
         })
 
-        it('lists available actions for a game', function(done){
+        it('records the leader board of an instance after game is finished', function(done){
+            expect(implementation).to.exist;
+            done();
+        });
 
-        })
-
+        it('deactivates the instance when it is completed', function(done){
+            expect(implementation).to.exist;
+            done();
+        });
     });
-
 });

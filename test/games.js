@@ -15,6 +15,33 @@ var db = nano.use(config.dbName);
 var instances = require('../instances');
 
 describe('Games', function(){
+    afterEach(function(done){
+        console.log("starting deletes");
+        tools.clean('instances', 'all').spread(function(body){
+
+            tools.clean('users', 'all').spread(function(body){
+                console.log("Finished deletes");
+                authToken = null;
+                done();
+
+            });
+        })
+    })
+    beforeEach(function(done){
+        console.log("Starting login");
+        tools.createUser(dummyConfirmed).spread(function(user){
+            console.log(user);
+            tools.loginAs(dummyConfirmed.username, dummyConfirmed.password, function(token){
+                authToken = token;
+
+                console.log("finished login", token);
+                done();
+            });
+        }).catch(function(err){
+            console.log("User creation failed because " + err);
+        });
+    });
+    
     it('list games', function(done){
         api.get('/game/')
             .set({"x-access-token": authToken})
@@ -34,32 +61,7 @@ describe('Games', function(){
         done();
     });
     describe('Instance', function() {
-        afterEach(function(done){
-            console.log("starting deletes");
-            tools.clean('instances', 'all').spread(function(body){
 
-                tools.clean('users', 'all').spread(function(body){
-                    console.log("Finished deletes");
-                    authToken = null;
-                    done();
-
-                });
-            })
-        })
-        beforeEach(function(done){
-            console.log("Starting login");
-            tools.createUser(dummyConfirmed).spread(function(user){
-                console.log(user);
-                tools.loginAs(dummyConfirmed.username, dummyConfirmed.password, function(token){
-                    authToken = token;
-
-                    console.log("finished login", token);
-                    done();
-                });
-            }).catch(function(err){
-                console.log("User creation failed because " + err);
-            });
-        });
         it('adds a player to a game', function(done){
             //Create new instance of TicTacToe
             api.post('/instance/')

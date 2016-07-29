@@ -5,5 +5,6 @@
 
 module.exports = {
     couchdbHost: "http://localhost:5984",
-    dbName: "login"
+    dbName: "login",
+    secret: "superSecret"
 }

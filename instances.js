@@ -1,15 +1,24 @@
 /**
  * Created by redun on 24/07/2016.
  */
-var config = require('./config');
-var Core = require('./Core');
+
 var express = require('express');
+
+var config = require('./config'); //config file
+var db = require('nano-blue')(config.couchdbHost).use(config.dbName); //shortcut variable to use the main db from couch
+var qr = require("./response"); //response helper
+
+//establish routers
 var secureRouter = express.Router();
 var openRouter = express.Router();
-var instances = {};
-var db = require('nano-blue')(config.couchdbHost).use(config.dbName);
-var qr = require("./response");
+
+//load related modules
+var Core = require('./Core');
 var games = require('./games');
+
+//in memory instance cache
+var instances = {};
+
 /**
  * Create a new instance of the given gameTemplate
  * @param gameTemplate
@@ -99,12 +108,18 @@ secureRouter.post('/', function(req, res, next){
     });
 });
 
+/**
+ * fetches the coreState and gameState for testing purposes
+ */
 secureRouter.get('/dev/:instId', function(req, res, next){
     getInstance(req.params.instId).then(function(instance){
         qr.ok(res, next, {coreState: instance.game.core.getState(), gameState: instance.game.getState()});
     })
 })
 
+/**
+ * Adds a new player to the specified (by authToken) to the instance specified (by req.params)
+ */
 secureRouter.patch('/:instId/addPlayer', function(req, res, next){
     getInstance(req.params.instId).then(function(instance){
         console.log(req.tokenData);
@@ -120,6 +135,14 @@ secureRouter.patch('/:instId/addPlayer', function(req, res, next){
     })
 })
 
+secureRouter.get('/active', function(req, res, next){
+    console.log("request for active instances recieved");
+    db.view('instances', 'byPlayerActive', {key: req.tokenData.id}).spread(function(body){
+        qr.ok(res, next, body.rows);
+    }).catch(function(err){
+        qr.failed(res, next, err);
+    });
+})
 module.exports = {
     newInstance: newInstance,
     getInstance: getInstance,

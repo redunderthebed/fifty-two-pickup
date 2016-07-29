@@ -12,6 +12,11 @@ var jwt = require("jsonwebtoken");
 var ms = require("ms");
 var app = null;
 var guid = require('./guid');
+
+/**
+ * Checks that the database exists, if it doesn't, it creates the db with views
+ * Any new changes to views should be included in this as well
+ */
 nano.use(config.dbName).list().catch(function(err){
   if(err.reason == "no_db_file"){
       console.log("Database file not found, creating now");
@@ -46,14 +51,6 @@ nano.use(config.dbName).list().catch(function(err){
 
 var db = nano.use(config.dbName);
 
-db.update = function(obj, key, callback) {
-  var db = this;
-  db.get(key, function (error, existing) {
-    if(!error) obj._rev = existing._rev;
-    db.insert(obj, key, callback);
-  });
-}
-
 //User create
 openRouter.post('/', function(req, res, next){
   var u = req.body;
@@ -82,16 +79,13 @@ openRouter.post('/', function(req, res, next){
   }
 });
 
-//User identify by username - not necessary
-secureRouter.get('/:username/id', function(req, res, next){
-  if(req.params.username){
-    db.view('users', 'usersByName', {key: req.params.username}).spread(function(data){
-      qr.ok(res, next, data.rows[0].value._id);
-    });
-  }
-  else{
-    qr.notFound(res, next, 'no user specified');
-  }
+/*Dev function to return the userId locked inside the token
+* Created for testing but not necessary, can just insert user
+* into database and get the id as response
+* */
+secureRouter.get('/dev', function(req, res, next){
+  console.log(req.tokenData);
+  qr.ok(res, next, req.tokenData.id);
 });
 
 //User read

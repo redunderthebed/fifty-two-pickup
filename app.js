@@ -4,6 +4,7 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 var cors = require('cors');
 var jwt = require('jsonwebtoken');
+var config = require('./config');
 
 /*process.on('unhandledRejection', function(reason, promise){
   console.log("Possibly unhandled rejection " + reason);
@@ -51,7 +52,7 @@ app.use(function(req, res, next) {
     if (token) {
 
       // verifies secret and checks exp
-      jwt.verify(token, app.get('superSecret'), function (err, decoded) {
+      jwt.verify(token, app.get(config.secret), function (err, decoded) {
         if (err) {
           return res.json({success: false, message: 'Failed to authenticate token.'});
         } else {

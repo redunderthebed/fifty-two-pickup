@@ -7,6 +7,10 @@ var supertest = require('supertest');
 var api = supertest('http://localhost:3000');
 var nano = require("nano-blue")("http://localhost:5984");
 var db = nano.use(config.dbName);
+var jwt = require('jsonwebtoken');
+var config = require('../config');
+
+
 var dummyDetails = {
     username: 'dummy',
     password: 'dummy',
@@ -23,6 +27,7 @@ var dummyConfirmed = {
     confirmed: true,
     confirmCode: "123abc"
 };
+
 function deleteUser(details) {
     return nano.use(config.dbName).view('users', 'usersByName', {key: details.username}).spread(function (data) {
         if(data.rows.length > 0) {
@@ -82,5 +87,6 @@ module.exports = {
     createUser: createUser,
     loginAs: loginAs,
     clean: clean,
-    api: api
+    api: api,
+
 };

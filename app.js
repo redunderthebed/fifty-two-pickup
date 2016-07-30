@@ -22,7 +22,7 @@ app.use(function (req, res, next) {
   req.startTime = new Date();
   var timeStamp = req.startTime.toString();
   timeStamp = timeStamp.substr(0, timeStamp.indexOf('GMT'));
-  console.log(timeStamp + ' ' + req.method + ' ' + req.url);
+  console.log('+++' + timeStamp + ' ' + req.method + ' ' + req.url);
 
   // Website you wish to allow to connect
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:63342');
@@ -88,7 +88,7 @@ app.use("/instance/", instances.secureRouter);
 app.use(function(req, res, next){
   var duration = ((new Date()).getTime() - req.startTime.getTime());
   var resp = res._headerSent?res.statusCode:"NONE";
-  console.log("Resp: " + resp + " - " + duration + "ms");
+  console.log("--- Resp: " + resp + " - " + duration + "ms");
 });
 var port = 3000;
 app.listen(port, function(){

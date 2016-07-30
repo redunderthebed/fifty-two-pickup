@@ -23,16 +23,24 @@ var instances = {};
 function getPostRoute(action, route){
     return function(req, res, next){
         console.log("Route called", route, "for instance", req.params.instId);
+        console.log(req.body);
         var args = req.body;
+        //console.log(instances);
         getInstance(req.params.instId).then(function(instance){
             if(instance){
-                var result = action.apply(instance, args);
-                qr.created(res, next, result);
+                var result = action.apply(instance, [args]);
+                if(typeof result != "Error") {
+                    qr.created(res, next, result);
+                }
+                else{
+                    qr.failed(res, next, error);
+                }
             }
             else{
                 qr.notFound(res, next, "Instance doesn't exist");
             }
         }).catch(function(err){
+            console.log(err);
             qr.notFound(res, next, "Instance doesn't exist");
         });
     }
@@ -42,17 +50,18 @@ function getPostRoute(action, route){
 games.getGames().then(function(gameStubList){
     //Go through each stub
     gameStubList.forEach(function(stub){
+        console.log('Loading', stub.gameName);
         //Get the full game
         games.getGame(stub._id).then(function(game){
             //Instantiate it so we can access the actions
             game = new game();
-
+            console.log('\tPost Actions:');
             //iterate the actions
             Object.keys(game.actions.post).forEach(function(key){
-
                 //Create route from action name (args as post data)
-                var action = game.actions[key];
+                var action = game.actions.post[key];
                 var route = "/:instId/action/" + key;
+                console.log('\t\tRoute:', "instance" + route);
                 secureRouter.post(route, getPostRoute(action, route));
             });
         })
@@ -140,6 +149,7 @@ secureRouter.post('/', function(req, res, next){
     games.getGame(req.body.gameId).then(function(template){
         newInstance(template).then(function(instance){
             instances[instance._id] = instance;
+            console.log("new instance id", instance._id);
             qr.created(res, next, {_id: instance._id, _rev: instance._rev});
         })
     }).catch(function(err){

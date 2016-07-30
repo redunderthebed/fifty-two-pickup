@@ -94,7 +94,7 @@ describe('Games', function(){
                     expect(res.body.data._rev).to.be.ok;
 
                     var instId = res.body.data._id;
-
+                    console.log(instId);
                     //Add player to instance
                     api.patch('/instance/' + instId + '/addPlayer')
                         .set('x-access-token', authToken)
@@ -199,7 +199,36 @@ describe('Games', function(){
         });
 
         it('successfully calls post actions for instance', function(done){
+            api.post('/instance/')
+                .send({
+                    gameId: "12345" //Send id of game template to be instantiated
+                })
+                .set('x-access-token', authToken) //Send authToken
+                .end(function(err, res) {
 
+                    //Check created ok and id and rev number returned
+                    expect(res.statusCode).to.equal(201);
+                    expect(res.body.ok).to.be.ok;
+                    expect(res.body.data._id).to.be.ok;
+                    expect(res.body.data._rev).to.be.ok;
+
+                    var instId = res.body.data._id;
+                    console.log("Instance ID:", instId);
+                    api.post('/instance/' + instId + '/action/placeSymbol')
+                        .send({
+                            row: 1,
+                            col: 2,
+                            symbol: 'x'
+                        })
+                        .set('x-access-token', authToken)
+                        .end(function(err, res){
+                            console.log(res.body);
+                            expect(res.statusCode).to.equal(201);
+                            expect(res.body.ok).to.be.ok;
+                            expect(res.body.data.ok).to.be.ok;
+                            done();
+                        })
+                });
         })
 
         it('lists the old instances a user was involved in', function(done){

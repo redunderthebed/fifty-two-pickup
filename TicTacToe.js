@@ -20,8 +20,14 @@ function ticTacToe(){
 
     this.actions = {
         post: {
-            placeSymbol: function (row, col, symbol) {
-                console.log("row", row, "col", col, "symbol", symbol);
+            placeSymbol: function (args) {
+                if(args.row && args.col && args.symbol) {
+                    console.log("row", args.row, "col", args.col, "symbol", args.symbol);
+                    return {ok: true};
+                }
+                else{
+                    return new Error("Missing arguments");
+                }
             }
         }
     };

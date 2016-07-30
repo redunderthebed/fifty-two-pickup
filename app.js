@@ -38,8 +38,9 @@ app.use(function (req, res, next) {
 });
 
 var users = require("./users");
-var games = require("./games");
+
 var instances = require("./instances");
+var games = require("./games");
 app.use("/user/", users.openRouter);
 
 app.use(function(req, res, next) {

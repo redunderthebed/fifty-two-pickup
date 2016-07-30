@@ -23,7 +23,7 @@ Gets the specified game template
 @returns {Promise} with gameTemplate object
  */
 function getGame(id) {
-    console.log("Games", games);
+    //console.log("Games", games);
     return new Promise(function(resolve, reject){
 
         var gameId = Object.keys(games).find(function(key){

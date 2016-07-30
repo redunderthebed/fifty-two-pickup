@@ -20,16 +20,16 @@ function ticTacToe(){
 
     this.actions = {
         post: {
-            placeSymbol: function (symbol) {
-
+            placeSymbol: function (row, col, symbol) {
+                console.log("row", row, "col", col, "symbol", symbol);
             }
         }
-    },
+    };
     this.events = {
         playerJoined: new function(player){
 
         }
-    },
+    };
     this.init = function(){
         this.core.createBoard("mainBoard");
     },

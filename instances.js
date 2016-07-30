@@ -19,6 +19,45 @@ var games = require('./games');
 //in memory instance cache
 var instances = {};
 
+
+function getPostRoute(action, route){
+    return function(req, res, next){
+        console.log("Route called", route, "for instance", req.params.instId);
+        var args = req.body;
+        getInstance(req.params.instId).then(function(instance){
+            if(instance){
+                var result = action.apply(instance, args);
+                qr.created(res, next, result);
+            }
+            else{
+                qr.notFound(res, next, "Instance doesn't exist");
+            }
+        }).catch(function(err){
+            qr.notFound(res, next, "Instance doesn't exist");
+        });
+    }
+}
+
+//Get game stub list
+games.getGames().then(function(gameStubList){
+    //Go through each stub
+    gameStubList.forEach(function(stub){
+        //Get the full game
+        games.getGame(stub._id).then(function(game){
+            //Instantiate it so we can access the actions
+            game = new game();
+
+            //iterate the actions
+            Object.keys(game.actions.post).forEach(function(key){
+
+                //Create route from action name (args as post data)
+                var action = game.actions[key];
+                var route = "/:instId/action/" + key;
+                secureRouter.post(route, getPostRoute(action, route));
+            });
+        })
+    });
+})
 /**
  * Create a new instance of the given gameTemplate
  * @param gameTemplate

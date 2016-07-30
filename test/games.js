@@ -51,17 +51,31 @@ describe('Games', function(){
                 console.log(res.body);
                 expect(res.statusCode).to.equal(200);
                 res.body.data.forEach(function(game){
-
                     expect(game.gameName).to.exist;
-
                 });
                 done();
             });
     });
+
     it('loads actions for each game', function(done){
-        expect(implementation).to.exist;
-        done();
+        //Send post request to instance that doesn't exist, just to confirm route is responding
+        api.post('/instance/123/action/placeSymbol')
+            .set('x-access-token', authToken)
+            .send({
+                row: 1,
+                col: 1,
+                symbol: 'x'
+            })
+            .end(function(err, res){
+                //Expect graceful failure
+
+                expect(res.body.ok).to.equal(false);
+                expect(res.body.error).to.equal("Instance doesn't exist");
+                expect(res.statusCode).to.equal(404);
+                done();
+            })
     });
+
     describe('Instance', function() {
 
         it('adds a player to a game', function(done){
@@ -184,9 +198,8 @@ describe('Games', function(){
                 });
         });
 
-        it('successfully calls actions for instance', function(done){
-            expect(implementation).to.exist;
-            done();
+        it('successfully calls post actions for instance', function(done){
+
         })
 
         it('lists the old instances a user was involved in', function(done){

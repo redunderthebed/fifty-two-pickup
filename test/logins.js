@@ -111,23 +111,6 @@ describe('User', function() {
         });
     });
     describe('Get', function(){
-        it('accepts username, returns id', function(done){
-            tools.createUser(dummyConfirmed).spread(function(data){
-                tools.loginAs(dummyConfirmed.username, dummyConfirmed.password, function(authToken){
-                    api.get('/User/' + dummyConfirmed.username + '/id')
-                        .set({"x-access-token":authToken})
-                        .end(function(err, res) {
-                            var id = res.body.data;
-                            expect(res.status).to.equal(200);
-                            expect(res.body.ok).to.be.ok;
-
-                            expect(res.body.data).to.equal(data.data.id);
-                            expect(res.body.data.length).to.be.above(10);
-                            done();
-                    });
-                });
-            });
-        });
         it('returns no security information', function(done){
             tools.createUser(dummyConfirmed).spread(function (data) {
                 tools.loginAs(dummyConfirmed.username, dummyConfirmed.password, function (authToken) {

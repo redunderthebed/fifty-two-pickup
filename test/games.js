@@ -250,5 +250,10 @@ describe('Games', function(){
             expect(implementation).to.exist;
             done();
         });
+
+        it('handles erroneous action call gracefully', function(done){
+            expect(implementation).to.exist;
+            done();
+        })
     });
 });

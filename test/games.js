@@ -232,8 +232,31 @@ describe('Games', function(){
         })
 
         it('lists the old instances a user was involved in', function(done){
-            expect(implementation).to.exist;
-            done();
+            var players = {};
+            players[userId] = {_id: userId, username: dummyConfirmed.username};
+            db.insert({
+                gameState:{},
+                coreState:{
+                    players: players,
+                    boards: {},
+                    cards: {},
+                    active: false,
+                    open: true
+                }
+            }).then(function(body){
+                console.log(body);
+                var createdInstId = body[0].id;
+                api.get('/instance/inactive')
+                    .set('x-access-token', authToken)
+                    .end(function(err, res){
+                        console.log(res.body);
+                        expect(res.body.ok).to.be.ok;
+                        expect(res.statusCode).to.equal(200);
+                        expect(res.body.data[0].id).to.equal(createdInstId);
+
+                        done();
+                    });
+            })
         })
 
         it('sets the creator player as the host', function(done){

@@ -37,11 +37,19 @@ nano.use(config.dbName).list().catch(function(err){
           views: {
             all: {
               map: "function(doc) {\n  if(doc.coreState){\n    emit(doc._id, doc);\n  }\n}"
+            },
+            byPlayerActive: {
+              map: "function(doc) {\n  if(doc.coreState && doc.coreState.active){\n    var players = doc.coreState.players;\n    for(id in players){\n       emit(id, doc);\n    }\n }\n}"
+            },
+            byPlayerInactive:{
+              map: "function(doc){\n if(doc.coreState && !doc.coreState.active){\n    var players = doc.coreState.players;\n    for(id in players){\n       emit(id, doc);\n    }\n }\n}"
             }
           }
         }, "_design/instances");
+        console.log('done');
       }).spread(function(body){
         console.log("Database created ok");
+        return [];
       }).catch(function(err){
         console.log("Creation failed, this isn't going to go well");
         console.log(err);

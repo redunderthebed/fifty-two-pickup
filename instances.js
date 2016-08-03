@@ -192,6 +192,15 @@ secureRouter.get('/active', function(req, res, next){
         qr.failed(res, next, err);
     });
 })
+
+secureRouter.get('/inactive', function(req, res, next){
+    console.log("request for inactive instances recieved");
+    db.view('instances', 'byPlayerInactive', {key: req.tokenData.id}).spread(function(body){
+        qr.ok(res, next, body.rows);
+    }).catch(function(err){
+        qr.failed(res, next, err);
+    });
+})
 module.exports = {
     newInstance: newInstance,
     getInstance: getInstance,

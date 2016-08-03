@@ -67,8 +67,11 @@ function Core(savedState){
     this.getState = function(){
         return state;
     }
-    this.setHost = function(){
+    this.setHost = function(id){
         state.host = id;
+    }
+    this.getHost = function(){
+        return state.host;
     }
 }
 

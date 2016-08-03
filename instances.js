@@ -98,7 +98,9 @@ function newInstance(gameTemplate){
                 _rev: body.rev,
                 game: game
             }
-            
+
+            console.log("Instance created");
+
             //Resolve promise with instance object
             resolve(instance);
         }).catch(function(err){
@@ -149,6 +151,7 @@ secureRouter.post('/', function(req, res, next){
     games.getGame(req.body.gameId).then(function(template){
         newInstance(template).then(function(instance){
             instances[instance._id] = instance;
+            instance.game.core.setHost(req.tokenData.id);
             console.log("new instance id", instance._id);
             qr.created(res, next, {_id: instance._id, _rev: instance._rev});
         })

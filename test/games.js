@@ -257,12 +257,31 @@ describe('Games', function(){
                         done();
                     });
             })
-        })
+        });
 
         it('sets the creator player as the host', function(done){
-            expect(implementation).to.exist;
-            done();
+            api.post('/instance/')
+                .send({
+                    gameId: "12345"
+                })
+                .set('x-access-token', authToken)
+                .end(function(err, res){
+
+                    expect(res.statusCode).to.equal(201);
+                    expect(res.body.ok).to.be.ok;
+                    expect(res.body.data).to.be.ok;
+                    
+                    api.get('/instance/dev/' + res.body.data._id)
+                        .set('x-access-token', authToken)
+                        .end(function(err, res){
+                            expect(res.body.ok).to.be.ok;
+                            expect(res.body.data.coreState.host).to.equal(userId);
+                            done();
+                        })
+
+                })
         })
+
 
         it('records the leader board of an instance after game is finished', function(done){
             expect(implementation).to.exist;

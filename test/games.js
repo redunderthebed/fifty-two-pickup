@@ -270,7 +270,7 @@ describe('Games', function(){
                     expect(res.statusCode).to.equal(201);
                     expect(res.body.ok).to.be.ok;
                     expect(res.body.data).to.be.ok;
-                    
+
                     api.get('/instance/dev/' + res.body.data._id)
                         .set('x-access-token', authToken)
                         .end(function(err, res){
@@ -289,6 +289,7 @@ describe('Games', function(){
         });
 
         it('deactivates the instance when it is completed', function(done){
+            
             expect(implementation).to.exist;
             done();
         });

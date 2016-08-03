@@ -149,11 +149,15 @@ secureRouter.post('/', function(req, res, next){
     console.log("received instance create request", req.body);
     //Get game template
     games.getGame(req.body.gameId).then(function(template){
-        newInstance(template).then(function(instance){
+        return newInstance(template).then(function(instance){
             instances[instance._id] = instance;
+            instance.game.core.setGame(instance.game);
             instance.game.core.setHost(req.tokenData.id);
+            instance.game.init();
             console.log("new instance id", instance._id);
             qr.created(res, next, {_id: instance._id, _rev: instance._rev});
+        }).catch(function(err){
+            qr.failed(res, next, err);
         })
     }).catch(function(err){
         qr.notFound(res, next, err);

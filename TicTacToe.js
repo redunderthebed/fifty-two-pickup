@@ -23,6 +23,8 @@ function ticTacToe(){
             placeSymbol: function (args) {
                 if(args.row && args.col && args.symbol) {
                     console.log("row", args.row, "col", args.col, "symbol", args.symbol);
+
+
                     return {ok: true};
                 }
                 else{
@@ -32,9 +34,13 @@ function ticTacToe(){
         }
     };
     this.events = {
-        playerJoined: new function(player){
+        playerJoined: function(player){
+
+        },
+        determineWinner: function(){
 
         }
+
     };
     this.init = function(){
         this.core.createBoard("mainBoard");

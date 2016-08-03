@@ -37,6 +37,7 @@ function Board(rows, columns){
 }
 
 function Core(savedState){
+    var game = null;
     var state =
     {
         players: {},
@@ -52,8 +53,8 @@ function Core(savedState){
         })
     }
     this.createBoard = function(name, rows, cols){
-        boards[name] = new Board(rows, cols);
-        return boards[name];
+        state.boards[name] = new Board(rows, cols);
+        return state.boards[name];
     }
     this.addPlayer = function (player){
         state.players[player._id] = player;
@@ -72,6 +73,12 @@ function Core(savedState){
     }
     this.getHost = function(){
         return state.host;
+    }
+    this.setGame = function(gameIn){
+        game = gameIn;
+    }
+    this.gameOver = function(){
+        var leaderboard = this.game.determineWinner();
     }
 }
 

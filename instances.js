@@ -28,7 +28,8 @@ function getPostRoute(action, route){
         //console.log(instances);
         getInstance(req.params.instId).then(function(instance){
             if(instance){
-                var result = action.apply(instance, [args]);
+                args.playerId = req.tokenData.id;
+                var result = action.apply(instance.game, [args]);
                 if(typeof result != "Error") {
                     qr.created(res, next, result);
                 }
@@ -164,6 +165,44 @@ secureRouter.post('/', function(req, res, next){
     });
 });
 
+secureRouter.get('/active', function(req, res, next){
+    console.log("request for active instances recieved");
+    db.view('instances', 'byPlayerActive', {key: req.tokenData.id}).spread(function(body){
+        console.log(body);
+        qr.ok(res, next, body.rows);
+    }).catch(function(err){
+        console.log(err);
+        qr.failed(res, next, err);
+    });
+})
+
+secureRouter.get('/inactive', function(req, res, next){
+    console.log("request for inactive instances recieved");
+    db.view('instances', 'byPlayerInactive', {key: req.tokenData.id}).spread(function(body){
+        qr.ok(res, next, body.rows);
+    }).catch(function(err){
+        qr.failed(res, next, err);
+    });
+})
+
+secureRouter.get('/:instId', function(req, res, next){
+    getInstance(req.params.instId).then(function(instance){
+        var state = instance.game.core.getState();
+        var host = instance.game.core.getPlayer(state.host);
+        var stub = {
+            _id: instance._id,
+            _rev: instance._rev,
+            active: state.active,
+            open: state.open,
+            host: host.username,
+            leaderBoard: state.leaderBoard
+        }
+        qr.ok(res, next, stub);
+    }).catch(function(err){
+        qr.notFound(res, next, err);
+    })
+})
+
 /**
  * fetches the coreState and gameState for testing purposes
  */
@@ -191,23 +230,7 @@ secureRouter.patch('/:instId/addPlayer', function(req, res, next){
     })
 })
 
-secureRouter.get('/active', function(req, res, next){
-    console.log("request for active instances recieved");
-    db.view('instances', 'byPlayerActive', {key: req.tokenData.id}).spread(function(body){
-        qr.ok(res, next, body.rows);
-    }).catch(function(err){
-        qr.failed(res, next, err);
-    });
-})
 
-secureRouter.get('/inactive', function(req, res, next){
-    console.log("request for inactive instances recieved");
-    db.view('instances', 'byPlayerInactive', {key: req.tokenData.id}).spread(function(body){
-        qr.ok(res, next, body.rows);
-    }).catch(function(err){
-        qr.failed(res, next, err);
-    });
-})
 module.exports = {
     newInstance: newInstance,
     getInstance: getInstance,

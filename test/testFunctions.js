@@ -27,7 +27,14 @@ var dummyConfirmed = {
     confirmed: true,
     confirmCode: "123abc"
 };
-
+var otherUser = {
+    username: 'other',
+    password: 'other',
+    confirm: 'other',
+    email: 'other@test.com',
+    confirmed: true,
+    confirmCode: "124fds"
+}
 function deleteUser(details) {
     return nano.use(config.dbName).view('users', 'usersByName', {key: details.username}).spread(function (data) {
         if(data.rows.length > 0) {
@@ -60,6 +67,7 @@ function loginAs(user, pass, callback){
     end(function(err, res){
         if(err){
             console.log("User login failed because " + err);
+            throw err;
         }
         else{
             
@@ -67,6 +75,17 @@ function loginAs(user, pass, callback){
         }
     });
 };
+function createAndLoginAs(details){
+    return createUser(details).then(function(user){
+        var userId = user[0].data.id;
+        return new Promise(function(resolve, reject){
+            loginAs(details.username, details.password, function (authToken) {
+                console.log("Logged in", authToken);
+                resolve({id: userId, token: authToken});
+            })
+        });
+    })
+}
 function clean(designDoc, viewName){
     return db.view(designDoc, viewName).spread(function(body){
         var instances = {docs:[]};
@@ -83,8 +102,10 @@ function clean(designDoc, viewName){
 module.exports = {
     dummyDetails: dummyDetails,
     dummyConfirmed: dummyConfirmed,
+    otherUser: otherUser,
     deleteUser: deleteUser,
     createUser: createUser,
+    createAndLoginAs: createAndLoginAs,
     loginAs: loginAs,
     clean: clean,
     api: api,

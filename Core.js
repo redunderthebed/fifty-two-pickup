@@ -34,6 +34,22 @@ function Board(rows, columns){
             return cells[row][col];
         }
     }
+    this.getState = function(){
+        var boardState = cells.map(function(row){
+            return row.map(function(cell){
+                return cell.map(function(item){
+                    var type = typeof item;
+                    if(item.getState){
+                        return {type: type, item: item.getState()}
+                    }
+                    else{
+                        return item;
+                    }
+                });
+            });
+        });
+        return {rows: rows, columns: columns, cells: boardState};
+    }
 }
 
 function Core(savedState){
@@ -78,7 +94,8 @@ function Core(savedState){
         game = gameIn;
     }
     this.gameOver = function(){
-        var leaderboard = this.game.determineWinner();
+        console.log("Determine", game.events.determineWinner);
+        this.getState().leaderBoard = game.events.determineWinner.apply(game);
     }
 }
 

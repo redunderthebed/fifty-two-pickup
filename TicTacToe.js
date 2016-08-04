@@ -9,6 +9,7 @@ function ticTacToe(){
 
     };
     function getState(){
+        console.log('getting game state of tictactoe');
         return state;
     }
 
@@ -30,6 +31,18 @@ function ticTacToe(){
                 else{
                     return new Error("Missing arguments");
                 }
+            },
+            setWinner: function(args){
+                console.log("Set winner");
+                console.log("Set winner", this.getState());
+                this.getState().winner = args.playerId;
+                this.core.gameOver();
+                return {ok:true};
+            },
+            setLoser : function(args){
+                console.log("Set loser");
+                this.getState().loser = args.playerId;
+                return {ok:true};
             }
         }
     };
@@ -38,7 +51,10 @@ function ticTacToe(){
 
         },
         determineWinner: function(){
-
+            console.log("determining winner");
+            var first = this.core.getPlayer(this.getState().winner);
+            var second = this.core.getPlayer(this.getState().loser);
+            return {first: first, second:second};
         }
 
     };

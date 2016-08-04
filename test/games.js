@@ -15,6 +15,64 @@ var userId = null;
 var db = nano.use(config.dbName);
 var instances = require('../instances');
 
+function createInstanceOf(gameId, authToken) {
+    return new Promise(function(resolve, reject)
+    {
+        //Create new instance of TicTacToe
+        api.post('/instance/')
+            .send({
+                gameId: gameId //Send id of game template to be instantiated
+            })
+            .set('x-access-token', authToken) //Send authToken
+            .end(function (err, res) {
+                if(err){
+                    reject(err);
+                }
+                //Check created ok and id and rev number returned
+                expect(res.statusCode).to.equal(201);
+                expect(res.body.ok).to.be.ok;
+                expect(res.body.data._id).to.be.ok;
+                expect(res.body.data._rev).to.be.ok;
+
+                var instId = res.body.data._id;
+
+                resolve(instId);
+            })
+    })
+}
+
+function addPlayerTo(instanceId, authToken){
+    return new Promise(function(resolve, reject) {
+        api.patch('/instance/' + instanceId + '/addPlayer')
+            .set('x-access-token', authToken)
+            .end(function (err, res) {
+                if(err){
+                    reject(err);
+                }
+                //Check for ok response
+                expect(res.body.ok).to.be.ok;
+                expect(res.statusCode).to.equal(200);
+                resolve({ok: true});
+            });
+    });
+}
+
+function callPostAction(instanceId, action, args, authToken){
+    return new Promise(function(resolve, reject){
+        api.post('/instance/' + instanceId + '/action/' + action)
+            .set('x-access-token', authToken)
+            .send(args)
+            .end(function(err, res){
+                if(err){
+                    reject(err);
+                }
+                expect(res.body.ok).to.be.ok;
+                expect(res.statusCode).to.equal(201);
+                resolve(res.body.data);
+            });
+    });
+}
+
 describe('Games', function(){
     afterEach(function(done){
         tools.clean('instances', 'all').spread(function(body){
@@ -284,8 +342,38 @@ describe('Games', function(){
 
 
         it('records the leader board of an instance after game is finished', function(done){
-            expect(implementation).to.exist;
-            done();
+            createInstanceOf("12345", authToken).then(function(instId){
+                console.log('Created instance', instId);
+                return addPlayerTo(instId, authToken).then(function(body){
+                    console.log('Added player', body);
+                    return tools.createAndLoginAs(tools.otherUser).then(function(otherUser){
+                        console.log('Created other user', otherUser);
+                        return addPlayerTo(instId, otherUser.token).then(function(body){
+                            console.log('Added other player', body);
+                            return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
+                                return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
+                                    console.log('Set winner', result);
+                                    api.get('/instance/' + instId)
+                                        .set('x-access-token', authToken)
+                                        .end(function(req, res){
+                                            console.log(res.body.data.leaderBoard);
+                                            var leaderBoard = res.body.data.leaderBoard;
+                                            expect(res.body.ok).to.be.ok;
+                                            expect(leaderBoard.first.username).to.equal(dummyConfirmed.username);
+                                            expect(leaderBoard.second.username).to.equal(tools.otherUser.username);
+                                            expect(leaderBoard.first._id).to.equal(userId);
+                                            expect(leaderBoard.second._id).to.equal(otherUser.id);
+                                            done();
+                                        });
+                                })
+                            })
+                        })
+                    }).catch(function(err){
+                        console.log(err);
+                    })
+                });
+            });
+
         });
 
         it('deactivates the instance when it is completed', function(done){

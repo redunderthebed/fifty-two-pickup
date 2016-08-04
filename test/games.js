@@ -57,7 +57,7 @@ function addPlayerTo(instanceId, authToken){
     });
 }
 
-function callPostAction(instanceId, action, args, authToken){
+function callPostAction(instanceId, action, args, authToken, noExpect){
     return new Promise(function(resolve, reject){
         api.post('/instance/' + instanceId + '/action/' + action)
             .set('x-access-token', authToken)
@@ -66,9 +66,11 @@ function callPostAction(instanceId, action, args, authToken){
                 if(err){
                     reject(err);
                 }
-                expect(res.body.ok).to.be.ok;
-                expect(res.statusCode).to.equal(201);
-                resolve(res.body.data);
+                if(!noExpect) {
+                    expect(res.body.ok).to.be.ok;
+                    expect(res.statusCode).to.equal(201);
+                }
+                resolve(res.body);
             });
     });
 }
@@ -144,7 +146,7 @@ describe('Games', function(){
                 })
                 .set('x-access-token', authToken) //Send authToken
                 .end(function(err, res){
-
+                    console.log(res.body);
                     //Check created ok and id and rev number returned
                     expect(res.statusCode).to.equal(201);
                     expect(res.body.ok).to.be.ok;
@@ -340,7 +342,6 @@ describe('Games', function(){
                 })
         })
 
-
         it('records the leader board of an instance after game is finished', function(done){
             createInstanceOf("12345", authToken).then(function(instId){
                 console.log('Created instance', instId);
@@ -408,8 +409,20 @@ describe('Games', function(){
         });
 
         it('handles erroneous action call gracefully', function(done){
-            expect(implementation).to.exist;
-            done();
+            return createInstanceOf("12345", authToken).then(function(instId) {
+                return addPlayerTo(instId, authToken).then(function (body) {
+                    console.log('Added player', body);
+                    return callPostAction(instId, "placeSymbol", {
+                        row: 5,
+                        col: 5
+                    }, authToken, true).then(function (result) {
+                        console.log('result', result);
+                        expect(result.ok).not.to.be.ok;
+                        expect(result.error.message).to.equal('Cell operation out of bounds');
+                        done();
+                    })
+                });
+            });
         })
     });
 });

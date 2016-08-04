@@ -29,11 +29,20 @@ function getPostRoute(action, route){
         getInstance(req.params.instId).then(function(instance){
             if(instance){
                 args.playerId = req.tokenData.id;
-                var result = action.apply(instance.game, [args]);
-                if(typeof result != "Error") {
+                var result;
+                var error;
+                try {
+                    result = action.apply(instance.game, [args]);
+                }
+                catch(err){
+                    error = err;
+                }
+                if(result) {
+                    console.log("not an error");
                     qr.created(res, next, result);
                 }
                 else{
+                    console.log("is an error");
                     qr.failed(res, next, error);
                 }
             }

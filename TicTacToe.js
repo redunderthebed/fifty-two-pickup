@@ -22,14 +22,22 @@ function ticTacToe(){
     this.actions = {
         post: {
             placeSymbol: function (args) {
-                if(args.row && args.col && args.symbol) {
+                if(args.row && args.col) {
+                    var index = this.core.getPlayers().indexOf(args.playerId);
+                    if(index == 0){
+                        args.symbol = 'X';
+                    }
+                    else{
+                        args.symbol = 'O';
+                    }
                     console.log("row", args.row, "col", args.col, "symbol", args.symbol);
+                    this.core.getState().boards.mainBoard.placeInCell(args.row, args.col, args.symbol);
 
 
                     return {ok: true};
                 }
                 else{
-                    return new Error("Missing arguments");
+                    throw new Error("Missing arguments");
                 }
             },
             setWinner: function(args){
@@ -59,7 +67,7 @@ function ticTacToe(){
 
     };
     this.init = function(){
-        this.core.createBoard("mainBoard");
+        this.core.createBoard("mainBoard", 3, 3);
     },
     this.getState = getState
     

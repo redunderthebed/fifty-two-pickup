@@ -8,15 +8,20 @@ function Board(rows, columns){
     var cells = [];
     for (var i = 0; i < rows; i++){
         cells.push([]);
-        for(var j = 0; j < cols; j++){
+        for(var j = 0; j < columns; j++){
             cells[i].push([]);
         }
     }
     var checkBounds = function(row, col){
-        return row < rows && col < cols && row >= 0 && col >= 0;
+        if(row < rows && col < columns && row >= 0 && col >= 0){
+            return true;
+        }
+        else{
+            throw new Error("Cell operation out of bounds");
+        }
     }
     this.placeInCell = function(row, col, object){
-        if(checkBounds){
+        if(checkBounds(row, col)){
             cells[row][col].push(object);
         }
     }

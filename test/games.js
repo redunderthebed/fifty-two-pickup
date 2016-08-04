@@ -377,9 +377,34 @@ describe('Games', function(){
         });
 
         it('deactivates the instance when it is completed', function(done){
-            
-            expect(implementation).to.exist;
-            done();
+            createInstanceOf("12345", authToken).then(function(instId){
+                console.log('Created instance', instId);
+                return addPlayerTo(instId, authToken).then(function(body){
+                    console.log('Added player', body);
+                    return tools.createAndLoginAs(tools.otherUser).then(function(otherUser){
+                        console.log('Created other user', otherUser);
+                        return addPlayerTo(instId, otherUser.token).then(function(body){
+                            console.log('Added other player', body);
+                            return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
+                                return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
+                                    console.log('Set winner', result);
+                                    api.get('/instance/' + instId)
+                                        .set('x-access-token', authToken)
+                                        .end(function(req, res){
+                                            console.log(res.body.data.leaderBoard);
+                                            var leaderBoard = res.body.data.leaderBoard;
+                                            expect(res.body.ok).to.be.ok;
+                                            expect(res.body.data.active).to.equal(false);
+                                            done();
+                                        });
+                                })
+                            })
+                        })
+                    }).catch(function(err){
+                        console.log(err);
+                    })
+                });
+            });
         });
 
         it('handles erroneous action call gracefully', function(done){

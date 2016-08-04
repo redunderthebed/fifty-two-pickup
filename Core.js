@@ -96,7 +96,9 @@ function Core(savedState){
     this.gameOver = function(){
         console.log("Determine", game.events.determineWinner);
         this.getState().leaderBoard = game.events.determineWinner.apply(game);
+        this.getState().active = false;
     }
+
 }
 
 module.exports = Core;

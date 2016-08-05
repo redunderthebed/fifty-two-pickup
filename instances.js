@@ -31,11 +31,16 @@ function getPostRoute(action, route){
                 args.playerId = req.tokenData.id;
                 var result;
                 var error;
-                try {
-                    result = action.apply(instance.game, [args]);
+                if(instance.game.core.getState().started) {
+                    try {
+                        result = action.apply(instance.game, [args]);
+                    }
+                    catch (err) {
+                        error = err;
+                    }
                 }
-                catch(err){
-                    error = err;
+                else{
+                    error = new Error('Game has not started yet');
                 }
                 if(result) {
                     console.log("not an error");
@@ -43,7 +48,7 @@ function getPostRoute(action, route){
                 }
                 else{
                     console.log("is an error");
-                    qr.failed(res, next, error);
+                    qr.failed(res, next, error.message);
                 }
             }
             else{

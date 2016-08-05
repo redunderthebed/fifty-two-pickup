@@ -80,6 +80,18 @@ function callPostAction(instanceId, action, args, authToken, noExpect){
     });
 }
 
+function startInstance(instId){
+    return new Promise(function(resolve, reject){
+        api.patch('/instance/' + instId + '/dev/start')
+            .set('x-access-token', authToken)
+            .end(function(err, res){
+                if(err){
+                    reject(err);
+                }
+                resolve(res.body);
+            });
+    });
+}
 describe('Games', function(){
     afterEach(function(done){
         tools.clean('instances', 'all').spread(function(body){
@@ -273,6 +285,7 @@ describe('Games', function(){
                 .set('x-access-token', authToken) //Send authToken
                 .end(function(err, res) {
 
+
                     //Check created ok and id and rev number returned
                     expect(res.statusCode).to.equal(201);
                     expect(res.body.ok).to.be.ok;
@@ -280,21 +293,27 @@ describe('Games', function(){
                     expect(res.body.data._rev).to.be.ok;
 
                     var instId = res.body.data._id;
-                    console.log("Instance ID:", instId);
-                    api.post('/instance/' + instId + '/action/placeSymbol')
-                        .send({
-                            row: 1,
-                            col: 2,
-                            symbol: 'x'
-                        })
+
+                    api.patch('/instance/' + instId + '/dev/start')
                         .set('x-access-token', authToken)
-                        .end(function(err, res){
-                            console.log(res.body);
-                            expect(res.statusCode).to.equal(201);
-                            expect(res.body.ok).to.be.ok;
-                            expect(res.body.data.ok).to.be.ok;
-                            done();
+                        .end(function(req, res){
+                            console.log("Instance ID:", instId);
+                            api.post('/instance/' + instId + '/action/placeSymbol')
+                                .send({
+                                    row: 1,
+                                    col: 2,
+                                    symbol: 'x'
+                                })
+                                .set('x-access-token', authToken)
+                                .end(function(err, res){
+                                    console.log(res.body);
+                                    expect(res.statusCode).to.equal(201);
+                                    expect(res.body.ok).to.be.ok;
+                                    expect(res.body.data.ok).to.be.ok;
+                                    done();
+                                })
                         })
+
                 });
         })
 
@@ -358,21 +377,25 @@ describe('Games', function(){
                         console.log('Created other user', otherUser);
                         return addPlayerTo(instId, otherUser.token).then(function(body){
                             console.log('Added other player', body);
-                            return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
-                                return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
-                                    console.log('Set winner', result);
-                                    api.get('/instance/' + instId)
-                                        .set('x-access-token', authToken)
-                                        .end(function(req, res){
-                                            console.log(res.body.data.leaderBoard);
-                                            var leaderBoard = res.body.data.leaderBoard;
-                                            expect(res.body.ok).to.be.ok;
-                                            expect(leaderBoard.first.username).to.equal(dummyConfirmed.username);
-                                            expect(leaderBoard.second.username).to.equal(tools.otherUser.username);
-                                            expect(leaderBoard.first._id).to.equal(userId);
-                                            expect(leaderBoard.second._id).to.equal(otherUser.id);
-                                            done();
-                                        });
+                            return startInstance(instId).then(function(body){
+                                console.log("started", body);
+                                expect(body.ok && body.data.started).to.be.ok;
+                                return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
+                                    return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
+                                        console.log('Set winner', result);
+                                        api.get('/instance/' + instId)
+                                            .set('x-access-token', authToken)
+                                            .end(function(req, res){
+                                                console.log(res.body.data.leaderBoard);
+                                                var leaderBoard = res.body.data.leaderBoard;
+                                                expect(res.body.ok).to.be.ok;
+                                                expect(leaderBoard.first.username).to.equal(dummyConfirmed.username);
+                                                expect(leaderBoard.second.username).to.equal(tools.otherUser.username);
+                                                expect(leaderBoard.first._id).to.equal(userId);
+                                                expect(leaderBoard.second._id).to.equal(otherUser.id);
+                                                done();
+                                            });
+                                    })
                                 })
                             })
                         })
@@ -393,24 +416,26 @@ describe('Games', function(){
                         console.log('Created other user', otherUser);
                         return addPlayerTo(instId, otherUser.token).then(function(body){
                             console.log('Added other player', body);
-                            return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
-                                return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
-                                    console.log('Set winner', result);
-                                    api.get('/instance/' + instId)
-                                        .set('x-access-token', authToken)
-                                        .end(function(req, res){
-                                            console.log(res.body.data.leaderBoard);
-                                            var leaderBoard = res.body.data.leaderBoard;
-                                            expect(res.body.ok).to.be.ok;
-                                            expect(res.body.data.active).to.equal(false);
-                                            done();
-                                        });
-                                })
-                            })
-                        })
+                            return startInstance(instId).then(function(body){
+                                return callPostAction(instId, "setLoser", {}, otherUser.token).then(function(result){
+                                    return callPostAction(instId, "setWinner", {}, authToken).then(function(result){
+                                        console.log('Set winner', result);
+                                        api.get('/instance/' + instId)
+                                            .set('x-access-token', authToken)
+                                            .end(function(req, res){
+                                                console.log(res.body.data.leaderBoard);
+                                                var leaderBoard = res.body.data.leaderBoard;
+                                                expect(res.body.ok).to.be.ok;
+                                                expect(res.body.data.active).to.equal(false);
+                                                done();
+                                            });
+                                    });
+                                });
+                            });
+                        });
                     }).catch(function(err){
                         console.log(err);
-                    })
+                    });
                 });
             });
         });
@@ -420,15 +445,17 @@ describe('Games', function(){
                 return tools.createAndLoginAs(tools.otherUser).then(function (otherUser) {
                     return addPlayerTo(instId, otherUser.token).then(function(otherUser){
                         return addPlayerTo(instId, authToken).then(function (body) {
-                            return callPostAction(instId, "placeSymbol", {
-                                row: 5,
-                                col: 5
-                            }, authToken, true).then(function (result) {
-                                console.log('result', result);
-                                expect(result.ok).not.to.be.ok;
-                                expect(result.error.message).to.equal('Cell operation out of bounds');
-                                done();
-                            })
+                            return startInstance(instId).then(function(body){
+                                return callPostAction(instId, "placeSymbol", {
+                                    row: 5,
+                                    col: 5
+                                }, authToken, true).then(function (result) {
+                                    console.log('result', result);
+                                    expect(result.ok).not.to.be.ok;
+                                    expect(result.error).to.equal('Cell operation out of bounds');
+                                    done();
+                                });
+                            });
                         });
                     })
                 });
@@ -494,8 +521,36 @@ describe('Games', function(){
 
         it('refuses to perform action on game that has not started', function(done){
 
-            expect(implementaion).to.exist;
-            done();
+            return createInstanceOf("12345", authToken).then(function(instId) {
+                console.log("Created instance");
+                return addPlayerTo(instId, authToken).then(function (body) {
+                    expect(body.ok).to.be.ok;
+                    return tools.createAndLoginAs(tools.otherUser).then(function (otherUser) {
+                        console.log("Created other user");
+                        return addPlayerTo(instId, otherUser.token).then(function (body) {
+                            api.patch('/instance/' + instId + '/ready')
+                                .set('x-access-token', authToken)
+                                .end(function(err, res){
+                                    console.log('ready player');
+                                    api.patch('/instance/' + instId + '/ready')
+                                        .set('x-access-token', otherUser.token)
+                                        .end(function(err, res) {
+                                            console.log('ready other');
+                                            expect(res.body.ok).to.be.ok;
+                                            expect(res.body.data.ready).to.equal(true);
+                                            callPostAction(instId, 'placeSymbol', {row: 1, col: 1}, authToken, true)
+                                                .then(function(body){
+                                                    console.log(body);
+                                                    expect(body.ok).to.be.not.ok;
+                                                    expect(body.error).to.be.equal('Game has not started yet');
+                                                    done();
+                                                })
+                                        });
+                                });
+                        });
+                    });
+                });
+            });
         });
 
         it('start game when all players have signalled readiness', function(done){

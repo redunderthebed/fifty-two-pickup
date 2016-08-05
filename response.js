@@ -108,6 +108,7 @@ var forbidden = function (res, next, reason){
         next();
     }
 };
+
 module.exports = {
     returnSingle: returnSingle,
     notFound: notFound,

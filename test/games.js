@@ -8,7 +8,6 @@ var nano = require("nano-blue")(config.couchdbHost);
 
 var tools = require('./testFunctions');
 var api = tools.api;
-var dummyDetails = tools.dummyDetails;
 var dummyConfirmed = tools.dummyConfirmed;
 var authToken = null;
 var userId = null;
@@ -41,7 +40,7 @@ function createInstanceOf(gameId, authToken) {
     })
 }
 
-function addPlayerTo(instanceId, authToken){
+function addPlayerTo(instanceId, authToken, noExpect){
     return new Promise(function(resolve, reject) {
         api.patch('/instance/' + instanceId + '/addPlayer')
             .set('x-access-token', authToken)
@@ -50,9 +49,11 @@ function addPlayerTo(instanceId, authToken){
                     reject(err);
                 }
                 //Check for ok response
-                expect(res.body.ok).to.be.ok;
-                expect(res.statusCode).to.equal(200);
-                resolve({ok: true});
+                if(!noExpect) {
+                    expect(res.body.ok).to.be.ok;
+                    expect(res.statusCode).to.equal(200);
+                }
+                resolve({ok: res.body.ok});
             });
     });
 }
@@ -63,10 +64,10 @@ function callPostAction(instanceId, action, args, authToken, noExpect){
             .set('x-access-token', authToken)
             .send(args)
             .end(function(err, res){
-                if(err){
+                if (err) {
                     reject(err);
                 }
-                if(!noExpect) {
+                if (!noExpect) {
                     expect(res.body.ok).to.be.ok;
                     expect(res.statusCode).to.equal(201);
                 }
@@ -146,7 +147,8 @@ describe('Games', function(){
                 })
                 .set('x-access-token', authToken) //Send authToken
                 .end(function(err, res){
-                    console.log(res.body);
+
+                    console.log("Player join response", res.body);
                     //Check created ok and id and rev number returned
                     expect(res.statusCode).to.equal(201);
                     expect(res.body.ok).to.be.ok;
@@ -159,7 +161,8 @@ describe('Games', function(){
                     api.patch('/instance/' + instId + '/addPlayer')
                         .set('x-access-token', authToken)
                         .end(function(err, res) {
-
+                            console.log('Add Player Error', err);
+                            console.log('Add Player response', res.body);
                             //Check for ok response
                             expect(res.body.ok).to.be.ok;
                             expect(res.statusCode).to.equal(200);
@@ -410,17 +413,100 @@ describe('Games', function(){
 
         it('handles erroneous action call gracefully', function(done){
             return createInstanceOf("12345", authToken).then(function(instId) {
-                return addPlayerTo(instId, authToken).then(function (body) {
-                    console.log('Added player', body);
-                    return callPostAction(instId, "placeSymbol", {
-                        row: 5,
-                        col: 5
-                    }, authToken, true).then(function (result) {
-                        console.log('result', result);
-                        expect(result.ok).not.to.be.ok;
-                        expect(result.error.message).to.equal('Cell operation out of bounds');
-                        done();
+                return tools.createAndLoginAs(tools.otherUser).then(function (otherUser) {
+                    return addPlayerTo(instId, otherUser.token).then(function(otherUser){
+                        return addPlayerTo(instId, authToken).then(function (body) {
+                            return callPostAction(instId, "placeSymbol", {
+                                row: 5,
+                                col: 5
+                            }, authToken, true).then(function (result) {
+                                console.log('result', result);
+                                expect(result.ok).not.to.be.ok;
+                                expect(result.error.message).to.equal('Cell operation out of bounds');
+                                done();
+                            })
+                        });
                     })
+                });
+            });
+        });
+
+        it('rejects join requests when the game is full', function(done){
+            return createInstanceOf("12345", authToken).then(function(instId){
+                return addPlayerTo(instId, authToken).then(function(body){
+                    expect(body.ok).to.be.ok;
+                    return tools.createAndLoginAs(tools.otherUser).then(function(otherUser){
+                        return addPlayerTo(instId, otherUser.token).then(function(body){
+                            expect(body.ok).to.be.ok;
+                            return tools.createAndLoginAs(tools.tooManyUser).then(function(tooManyUser){
+                                return addPlayerTo(instId, tooManyUser.token, true).then(function(body){
+                                    expect(body.ok).to.be.not.ok;
+
+                                    done();
+                                }).catch(function(err){
+                                    console.log(err);
+                                })
+                            })
+                        })
+                    })
+                    expect(implementaion).to.exist;
+                    done();
+                });
+            });
+        });
+
+        it('rejects join requests when the game has been started', function(done){
+            createInstanceOf("12345", authToken).then(function(instId){
+                db.get(instId).spread(function(body){
+                    console.log(body);
+                    expect(implementaion).to.exist;
+                    done();
+                })
+            })
+
+        });
+
+        it('refuses to start game until minimum players is met', function(done){
+            expect(implementaion).to.exist;
+            done();
+        });
+
+        it('refuses to perform action on game that has not started', function(done){
+            expect(implementaion).to.exist;
+            done();
+        });
+
+        it('start game when all players have signalled readiness', function(done){
+            return createInstanceOf("12345", authToken).then(function(instId) {
+                console.log("Created instance");
+                return addPlayerTo(instId, authToken).then(function (body) {
+                    expect(body.ok).to.be.ok;
+                    return tools.createAndLoginAs(tools.otherUser).then(function (otherUser) {
+                        console.log("Created other user");
+                        return addPlayerTo(instId, otherUser.token).then(function (body) {
+                            api.patch('/instance/' + instId + '/ready')
+                                .set('x-access-token', authToken)
+                                .end(function(err, res){
+                                    console.log('ready player');
+                                    api.patch('/instance/' + instId + '/ready')
+                                        .set('x-access-token', otherUser.token)
+                                        .end(function(err, res) {
+                                            console.log('ready other');
+                                            console.log(res.body);
+                                            expect(res.body.ok).to.be.ok;
+                                            expect(res.body.data.ready).to.equal(true);
+                                            api.get('/instance/' + instId)
+                                                .set('x-access-token', authToken)
+                                                .end(function(err, res){
+                                                    console.log(err);
+                                                    console.log(res.body);
+                                                    expect(res.body.data.open).to.equal(false);
+                                                    done();
+                                                })
+                                        });
+                            });
+                        });
+                    });
                 });
             });
         })

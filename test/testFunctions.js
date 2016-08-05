@@ -5,10 +5,10 @@ var config = require('../config');
 var expect = require('chai').expect;
 var supertest = require('supertest');
 var api = supertest('http://localhost:3000');
-var nano = require("nano-blue")("http://localhost:5984");
+var nano = require("nano-blue")(config.couchdbHost);
 var db = nano.use(config.dbName);
 var jwt = require('jsonwebtoken');
-var config = require('../config');
+
 
 
 var dummyDetails = {
@@ -34,7 +34,16 @@ var otherUser = {
     email: 'other@test.com',
     confirmed: true,
     confirmCode: "124fds"
+};
+var tooManyUser = {
+    username: 'qwample',
+    password: 'jigglefliggle',
+    confirmed: true,
+    email: 'jiggle@thefliggle.com',
+    confirm: 'jigglefliggle',
+    confirmCode: '12393'
 }
+
 function deleteUser(details) {
     return nano.use(config.dbName).view('users', 'usersByName', {key: details.username}).spread(function (data) {
         if(data.rows.length > 0) {
@@ -102,6 +111,7 @@ function clean(designDoc, viewName){
 module.exports = {
     dummyDetails: dummyDetails,
     dummyConfirmed: dummyConfirmed,
+    tooManyUser: tooManyUser,
     otherUser: otherUser,
     deleteUser: deleteUser,
     createUser: createUser,

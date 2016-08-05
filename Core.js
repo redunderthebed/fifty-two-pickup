@@ -78,31 +78,53 @@ function Core(savedState){
         return state.boards[name];
     }
     this.addPlayer = function (player){
-        state.players[player._id] = player;
+        console.log("There are currently " + this.getNumPlayers() + " and a limit of " + game.maxPlayers);
+        if(this.getNumPlayers() < game.maxPlayers) {
+            state.players[player._id] = player;
+        }
+        else{
+            throw new Error("Player capacity exceeded");
+        }
     };
     this.getPlayer = function(id){
         return state.players[id];
     };
     this.getPlayers = function(){
         return Object.keys(state.players);
-    }
+    };
     this.getState = function(){
         return state;
+    };
+    this.setPlayerReady = function(playerId, ready){
+        var player = this.getPlayer(playerId);
+        player.ready = ready;
+        var allReady = this.getPlayers().every(function(playerId){
+            console.log(this.getPlayer(playerId));
+            return this.getPlayer(playerId).ready == true;
+        }, this)
+        console.log(allReady);
+        this.setGameOpen(!allReady);
+    };
+    this.setGameOpen = function(open){
+        this.getState().open = open;
     }
+    this.getNumPlayers = function(){
+        return this.getPlayers().length;
+    };
     this.setHost = function(id){
         state.host = id;
-    }
+    };
     this.getHost = function(){
         return state.host;
-    }
+    };
     this.setGame = function(gameIn){
         game = gameIn;
-    }
+    };
     this.gameOver = function(){
         console.log("Determine", game.events.determineWinner);
         this.getState().leaderBoard = game.events.determineWinner.apply(game);
         this.getState().active = false;
-    }
+    };
 
 }
 

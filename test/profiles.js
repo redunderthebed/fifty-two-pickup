@@ -4,7 +4,6 @@
 var expect = require('chai').expect;
 var supertest = require('supertest');
 var nano = require("nano-blue")("http://localhost:5984");
-
 var tools = require('./testFunctions');
 var api = tools.api;
 

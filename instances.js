@@ -230,15 +230,40 @@ secureRouter.patch('/:instId/addPlayer', function(req, res, next){
         //get userId from auth token
         db.get(req.tokenData.id).spread(function(user){
             console.log("user retrieved from auth token");
-            instance.game.core.addPlayer({_id: req.tokenData.id, username: user.username});
-            qr.ok(res, next);
+            try {
+                instance.game.core.addPlayer({_id: req.tokenData.id, username: user.username});
+                qr.ok(res, next);
+            }
+            catch(err){
+                console.log(err.message);
+                qr.failed(res, next, err.message);
+            }
         }).catch(function(err){
             qr.forbidden(res, next, "user does not exist");
         })
-        
     })
 })
 
+secureRouter.patch('/:instId/ready', function(req, res, next){
+    getInstance(req.params.instId).then(function(instance){
+        var inst = instances[req.params.instId];
+        inst.game.core.setPlayerReady(req.tokenData.id, true);
+        qr.ok(res, next, {ready:true});
+    }).catch(function(err){
+        console.log(err);
+        qr.notFound(res, next, err.message);
+    });
+});
+
+secureRouter.patch('/:instId/dev/ready', function(req, res, next){
+    getInstance(req.params.instId).then(function(instance){
+
+        inst.game.core.getState().open = false;
+        qr.ok(res, next, {ready:true});
+    }).catch(function(err){
+        qr.notFound(res, next, err.message);
+    });
+});
 
 module.exports = {
     newInstance: newInstance,

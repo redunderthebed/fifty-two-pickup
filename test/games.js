@@ -477,11 +477,23 @@ describe('Games', function(){
         });
 
         it('refuses to start game until minimum players is met', function(done){
-            expect(implementaion).to.exist;
-            done();
+            return createInstanceOf("12345", authToken).then(function(instId) {
+                console.log("Created instance");
+                return addPlayerTo(instId, authToken).then(function (body) {
+                    expect(body.ok).to.be.ok;
+                    api.patch('/instance/' + instId + '/start')
+                        .set('x-access-token', authToken)
+                        .end(function(err, res){
+                            expect(res.body.ok).to.equal(false);
+                            expect(res.body.error).to.equal("Not enough players to start");
+                            done();
+                        });
+                });
+            });
         });
 
         it('refuses to perform action on game that has not started', function(done){
+
             expect(implementaion).to.exist;
             done();
         });

@@ -204,6 +204,7 @@ secureRouter.get('/:instId', function(req, res, next){
             active: state.active,
             open: state.open,
             host: host.username,
+            started: state.started,
             leaderBoard: state.leaderBoard
         }
         qr.ok(res, next, stub);
@@ -235,7 +236,6 @@ secureRouter.patch('/:instId/addPlayer', function(req, res, next){
                 qr.ok(res, next);
             }
             catch(err){
-                console.log(err.message);
                 qr.failed(res, next, err.message);
             }
         }).catch(function(err){
@@ -255,11 +255,26 @@ secureRouter.patch('/:instId/ready', function(req, res, next){
     });
 });
 
-secureRouter.patch('/:instId/dev/ready', function(req, res, next){
+secureRouter.patch('/:instId/start', function(req, res, next){
     getInstance(req.params.instId).then(function(instance){
+        var inst = instances[req.params.instId];
+        if(inst.game.core.hasEnoughPlayers()){
+            inst.game.core.start();
+        }
+        else{
+            throw new Error("Not enough players to start");
+        }
+        qr.ok(res, next, {started:true});
+    }).catch(function(err){
+        console.log(err);
+        qr.notFound(res, next, err.message);
+    });
+});
 
-        inst.game.core.getState().open = false;
-        qr.ok(res, next, {ready:true});
+secureRouter.patch('/:instId/dev/start', function(req, res, next){
+    getInstance(req.params.instId).then(function(instance){
+        instance.game.core.getState().started = true;
+        qr.ok(res, next, {started:true});
     }).catch(function(err){
         qr.notFound(res, next, err.message);
     });

@@ -65,7 +65,8 @@ function Core(savedState){
         boards: {},
         cards: {},
         active: true,
-        open: true
+        open: true,
+        started: false
     }
     
     if(savedState) {
@@ -77,8 +78,14 @@ function Core(savedState){
         state.boards[name] = new Board(rows, cols);
         return state.boards[name];
     }
+    this.hasEnoughPlayers = function(){{
+        return this.getNumPlayers() >= game.minPlayers;
+    }}
     this.addPlayer = function (player){
         console.log("There are currently " + this.getNumPlayers() + " and a limit of " + game.maxPlayers);
+        if(this.getState().started == true) {
+            throw new Error("Game has already started");
+        }
         if(this.getNumPlayers() < game.maxPlayers) {
             state.players[player._id] = player;
         }
@@ -120,6 +127,9 @@ function Core(savedState){
     this.setGame = function(gameIn){
         game = gameIn;
     };
+    this.start = function(){
+        this.getState().started = true;
+    }
     this.gameOver = function(){
         console.log("Determine", game.events.determineWinner);
         this.getState().leaderBoard = game.events.determineWinner.apply(game);

@@ -53,7 +53,11 @@ function addPlayerTo(instanceId, authToken, noExpect){
                     expect(res.body.ok).to.be.ok;
                     expect(res.statusCode).to.equal(200);
                 }
-                resolve({ok: res.body.ok});
+                var result = {ok: res.body.ok};
+                if(res.body.error){
+                    result.error = res.body.error;
+                }
+                resolve(result);
             });
     });
 }
@@ -457,12 +461,18 @@ describe('Games', function(){
 
         it('rejects join requests when the game has been started', function(done){
             createInstanceOf("12345", authToken).then(function(instId){
-                db.get(instId).spread(function(body){
-                    console.log(body);
-                    expect(implementaion).to.exist;
-                    done();
-                })
-            })
+                api.patch('/instance/' + instId + '/dev/start')
+                    .set('x-access-token', authToken)
+                    .end(function(err, res){
+                        console.log(res.body);
+                        addPlayerTo(instId, authToken, true).then(function(body){
+                            console.log(body);
+                            expect(body.ok).to.equal(false);
+                            expect(body.error).to.exist;
+                            done();
+                        })
+                    });
+            });
 
         });
 
@@ -495,14 +505,16 @@ describe('Games', function(){
                                             console.log(res.body);
                                             expect(res.body.ok).to.be.ok;
                                             expect(res.body.data.ready).to.equal(true);
-                                            api.get('/instance/' + instId)
+                                            api.patch('/instance/' + instId + '/start')
                                                 .set('x-access-token', authToken)
                                                 .end(function(err, res){
-                                                    console.log(err);
-                                                    console.log(res.body);
-                                                    expect(res.body.data.open).to.equal(false);
-                                                    done();
-                                                })
+                                                api.get('/instance/' + instId)
+                                                    .set('x-access-token', authToken)
+                                                    .end(function(err, res){
+                                                        expect(res.body.data.started).to.equal(true);
+                                                        done();
+                                                    });
+                                                });
                                         });
                             });
                         });

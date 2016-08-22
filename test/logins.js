@@ -67,7 +67,6 @@ describe('User', function() {
             api.post('/user/')
                 .send(failDetails)
                 .end(function (err, res) {
-
                     expect(res.statusCode).to.equal(404);
                     expect(res.body.ok).to.equal(false);
                     expect(res.body.error).to.equal("Registration information invalid");

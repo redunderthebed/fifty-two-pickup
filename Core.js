@@ -2,45 +2,58 @@
  * Created by redun on 24/07/2016.
  */
 
+var stateful = require('./state');
+
 function Board(rows, columns){
-    var rows = rows;
-    var columns = columns;
-    var cells = [];
+
+    stateful.StatefulObject.call(this);
+    var _state = {
+        rows: rows,
+        columns: columns,
+        cells: []
+    };
+
     for (var i = 0; i < rows; i++){
-        cells.push([]);
+        _state.cells.push([]);
         for(var j = 0; j < columns; j++){
-            cells[i].push([]);
+            _state.cells[i].push([]);
         }
     }
+
     var checkBounds = function(row, col){
-        if(row < rows && col < columns && row >= 0 && col >= 0){
+        if(row < _state.rows && col < _state.columns && row >= 0 && col >= 0){
             return true;
         }
         else{
             throw new Error("Cell operation out of bounds");
         }
-    }
+    };
+
     this.placeInCell = function(row, col, object){
         if(checkBounds(row, col)){
-            cells[row][col].push(object);
+            _state.cells[row][col].push(object);
         }
-    }
+    };
+
     this.removeFromCell = function(row, col, object){
         if(checkBounds(row, col)){
             var cell = cells[row][col];
             cell.splice(cell.indexOf(object), 1);
         }
-    }
+    };
+
     this.getCells = function(){
-        return cells;
-    }
+        return _state.cells;
+    };
+
     this.getCell = function(row, col){
         if(checkBounds(row, col)){
-            return cells[row][col];
+            return _state.cells[row][col];
         }
-    }
+    };
+
     this.getState = function(){
-        var boardState = cells.map(function(row){
+        var boardState = _state.cells.map(function(row){
             return row.map(function(cell){
                 return cell.map(function(item){
                     var type = typeof item;
@@ -54,29 +67,35 @@ function Board(rows, columns){
             });
         });
         return {rows: rows, columns: columns, cells: boardState};
-    }
+    };
+
+    this.setState = function(inState){
+        _state = inState;
+    };
 }
 
+stateful.addConstructor(Board, module);
+
 function Core(savedState){
+
+    stateful.StatefulObject.call(this);
     var game = null;
-    var state =
-    {
+    Object.assign(this._state, {
         players: {},
         boards: {},
         cards: {},
         active: true,
         open: true,
         started: false
-    }
-    
-    if(savedState) {
+    });
+    /*if(savedState) {
         Object.keys(savedState).forEach(function(key){
-            state[key] = savedState[key];
+            this._state[key] = savedState[key];
         })
-    }
+    }*/
     this.createBoard = function(name, rows, cols){
-        state.boards[name] = new Board(rows, cols);
-        return state.boards[name];
+        this._state.boards[name] = new Board(rows, cols);
+        return this._state.boards[name];
     }
     this.hasEnoughPlayers = function(){{
         return this.getNumPlayers() >= game.minPlayers;
@@ -87,21 +106,24 @@ function Core(savedState){
             throw new Error("Game has already started");
         }
         if(this.getNumPlayers() < game.maxPlayers) {
-            state.players[player._id] = player;
+            this._state.players[player._id] = player;
         }
         else{
             throw new Error("Player capacity exceeded");
         }
     };
     this.getPlayer = function(id){
-        return state.players[id];
+        return this._state.players[id];
     };
     this.getPlayers = function(){
-        return Object.keys(state.players);
+        return Object.keys(this._state.players);
     };
     this.getState = function(){
-        return state;
+        return this._state;
     };
+    this.setState = function(state){
+        this._state = state;
+    }
     this.setPlayerReady = function(playerId, ready){
         var player = this.getPlayer(playerId);
         player.ready = ready;
@@ -119,10 +141,10 @@ function Core(savedState){
         return this.getPlayers().length;
     };
     this.setHost = function(id){
-        state.host = id;
+        this._state.host = id;
     };
     this.getHost = function(){
-        return state.host;
+        return this._state.host;
     };
     this.setGame = function(gameIn){
         game = gameIn;
@@ -137,5 +159,5 @@ function Core(savedState){
     };
 
 }
-
+stateful.addConstructor(Core, module);
 module.exports = Core;

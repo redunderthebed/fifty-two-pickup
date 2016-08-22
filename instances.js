@@ -18,7 +18,7 @@ var games = require('./games');
 
 //in memory instance cache
 var instances = {};
-
+var state = require('./state');
 
 function getPostRoute(action, route){
     return function(req, res, next){
@@ -48,6 +48,7 @@ function getPostRoute(action, route){
                 }
                 else{
                     console.log("is an error");
+                    console.log(error.stack);
                     qr.failed(res, next, error.message);
                 }
             }
@@ -91,36 +92,44 @@ function newInstance(gameTemplate){
     return new Promise(function(resolve, reject){
         //Create new instance of gameTemplate
         var game = new gameTemplate();
+
         //Create a new Core
         var core = new Core();
 
         console.log("Creating new instance of " + game.gameName);
 
-        //Create a stub with only states and gameId for the database
-        var stub = {
-            gameId: gameTemplate._id,
-            gameState: game.getState(),
-            coreState: core.getState()
-        };
+        try {
 
-        db.insert(stub).spread(function(body){
-            //insert the core into the game
-            game.core = core;
+            //Create a stub with only states and gameId for the database
+            var stub = {
+                gameId: gameTemplate._id,
+                gameState: JSON.parse(state.stringify(game)),
+                coreState: JSON.parse(state.stringify(core))
+            };
 
-            //Build an instance object to be kept in memory
-            var instance = {
-                _id: body.id,
-                _rev: body.rev,
-                game: game
-            }
+            db.insert(stub).spread(function(body){
+                //insert the core into the game
+                game.core = core;
 
-            console.log("Instance created");
+                //Build an instance object to be kept in memory
+                var instance = {
+                    _id: body.id,
+                    _rev: body.rev,
+                    game: game
+                }
 
-            //Resolve promise with instance object
-            resolve(instance);
-        }).catch(function(err){
+                console.log("Instance created");
+
+                //Resolve promise with instance object
+                resolve(instance);
+            }).catch(function(err){
+                reject(err);
+            });
+        }
+        catch(err){
+            console.log('Instance Stub Error: ', err.message);
             reject(err);
-        });
+        }
     })
 }
 
@@ -141,14 +150,30 @@ function getInstance(id){
             console.log("Instance not in memory");
             //Retrieve from database if not
             db.get(id).spread(function(data){
+                console.log("retrieved instance from db");
                 if(data.gameId) {
-                    //TODO: THIS WILL NOT WORK, NEED TO CONSTRUCT INSTANCE OBJECT FROM DATABASE INFO
-                    resolve(data);
+                    var template = games.getGame(data.gameId).then(function(template){
+                        var game = new template();
+                        console.log("Game template instantiated");
+
+                        game.core = (state.parse(JSON.stringify(data.coreState)));
+                        console.log("done", JSON.stringify(data.gameState));
+                        var g = (state.parse(JSON.stringify(data.gameState)));
+                        game.setState(g.getState());
+                        console.log("game and core states loaded");
+                        var instance = {
+                            _id: data._id,
+                            _rev: data._rev,
+                            game: game
+                        }
+                        resolve(instance);
+                    });
                 }
                 else{
                     reject("No game with id of " + id + " found");
                 }
             }).catch(function(err){
+                console.log("game could not be retrieved because: " + err.message);
                 reject("No game with id of " + id + " found");
             });
         }
@@ -202,7 +227,8 @@ secureRouter.get('/inactive', function(req, res, next){
 secureRouter.get('/:instId', function(req, res, next){
     getInstance(req.params.instId).then(function(instance){
         var state = instance.game.core.getState();
-        var host = instance.game.core.getPlayer(state.host);
+        var host = instance.game.core.getHost();
+
         var stub = {
             _id: instance._id,
             _rev: instance._rev,
@@ -241,10 +267,10 @@ secureRouter.patch('/:instId/addPlayer', function(req, res, next){
                 qr.ok(res, next);
             }
             catch(err){
-                qr.failed(res, next, err.message);
+                qr.failed(res, next, "Failed to add player: " + err.message);
             }
         }).catch(function(err){
-            qr.forbidden(res, next, "user does not exist");
+            qr.forbidden(res, next, "user does not exist: " + err.message);
         })
     })
 })

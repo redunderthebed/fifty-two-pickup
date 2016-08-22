@@ -46,7 +46,7 @@ function getGame(id) {
 secureRouter.get('/', function(req, res, next){
     console.log('received game list request');
     getGames().then(function(list){
-        console.log(list);
+        console.log("Number of games: " + list.length);
         qr.ok(res, next, list);
     }).catch(function(err){
         qr.failed(res, next, "Can't retrieve game list because: " + err);

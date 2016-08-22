@@ -1,16 +1,17 @@
 /**
  * Created by redun on 26/07/2016.
  */
+var state = require('./state');
 
+function TicTacToe(){
+    state.StatefulObject.call(this);
 
-
-function ticTacToe(){
-    var state = {
-
-    };
     function getState(){
         console.log('getting game state of tictactoe');
-        return state;
+        return this._state;
+    }
+    this.setState = function(state){
+        this._state = state;
     }
 
     this._id = "12345";
@@ -68,9 +69,11 @@ function ticTacToe(){
     };
     this.init = function(){
         this.core.createBoard("mainBoard", 3, 3);
-    },
+    };
     this.getState = getState
     
 };
 
-module.exports = ticTacToe;
+state.addConstructor(TicTacToe, module);
+
+module.exports = TicTacToe;

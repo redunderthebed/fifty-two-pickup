@@ -210,11 +210,12 @@ describe('Games', function(){
                 })
                 .set('x-access-token', authToken)
                 .end(function(err, res){
+                    console.log(err);
+                    console.log(res.body);
                     expect(res.statusCode).to.equal(201);
                     expect(res.body.ok).to.be.ok;
                     expect(res.body.data).to.be.ok;
                     done();
-
                 })
         });
         
@@ -284,7 +285,7 @@ describe('Games', function(){
                 })
                 .set('x-access-token', authToken) //Send authToken
                 .end(function(err, res) {
-
+                    console.log(res.body);
 
                     //Check created ok and id and rev number returned
                     expect(res.statusCode).to.equal(201);
@@ -301,8 +302,7 @@ describe('Games', function(){
                             api.post('/instance/' + instId + '/action/placeSymbol')
                                 .send({
                                     row: 1,
-                                    col: 2,
-                                    symbol: 'x'
+                                    col: 2
                                 })
                                 .set('x-access-token', authToken)
                                 .end(function(err, res){
@@ -588,6 +588,43 @@ describe('Games', function(){
                     });
                 });
             });
-        })
+        });
+
+        it('retrieves idle instances from the database', function(done){
+            players = {};
+            players[userId] = {_id: userId, username: dummyConfirmed.username};
+            console.log("Inserting instance into db");
+            db.insert({
+                gameId: "12345",
+                gameState:["@TicTacToe",
+                    {}],
+                coreState:["@Core",{
+                        players:players,
+                        host: players[userId],
+                        boards:{
+                            mainBoard: ["@Board", {columns: 3, rows: 3, cells: [[[],[],[]],[[],[],[]],[[],[],[]]]}]
+                        },
+                        cards:{},
+                        active:true,
+                        open:true,
+                        started:false
+                    }]
+            }).spread(function(body){
+                var instId = body.id;
+                console.log("InstId", instId);
+                console.log("Retrieving instance");
+                api.get('/instance/' + body.id)
+                    .set('x-access-token', authToken)
+                    .end(function(err, res){
+                        console.log("Checking response");
+                        expect(res.statusCode).to.equal(200);
+                        expect(res.body.ok).to.be.ok;
+                        expect(res.body.data.host).to.equal(dummyConfirmed.username);
+                        expect(res.body.data._id).to.equal(instId)
+                        done();
+                    })
+            })
+
+        });
     });
 });

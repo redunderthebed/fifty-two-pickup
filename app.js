@@ -43,6 +43,8 @@ var instances = require("./instances");
 var games = require("./games");
 app.use("/user/", users.openRouter);
 
+app.use("/game/", games.openRouter);
+
 app.use(function(req, res, next) {
 
   if(res.headersSent == false) {

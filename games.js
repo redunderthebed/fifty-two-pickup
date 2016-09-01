@@ -43,7 +43,7 @@ function getGame(id) {
  * Returns a list of available games
  * @return Array of game template stubs
  */
-secureRouter.get('/', function(req, res, next){
+openRouter.get('/', function(req, res, next){
     console.log('received game list request');
     getGames().then(function(list){
         console.log("Number of games: " + list.length);
@@ -83,5 +83,6 @@ module.exports = {
     secureRouter: function(theApp) {
         app = theApp;
         return secureRouter;
-    }
+    },
+    openRouter: openRouter
 };

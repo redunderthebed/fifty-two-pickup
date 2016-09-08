@@ -35,14 +35,14 @@ nano.use(config.dbName).list().catch(function(err){
         nano.use(config.dbName).insert({
           language: "javascript",
           views: {
-            all: {
-              map: "function(doc) {\n  if(doc.coreState){\n    emit(doc._id, doc);\n  }\n}"
+            "all": {
+              "map": "function(doc) {\n  if(doc.coreState){\n    emit(doc._id, doc);\n  }\n}"
             },
-            byPlayerActive: {
-              map: "function(doc) {\n  if(doc.coreState && doc.coreState.active){\n    var players = doc.coreState.players;\n    for(id in players){\n       emit(id, doc);\n    }\n }\n}"
+            "byPlayerActive": {
+              "map": "function(doc) {\n  if(doc.coreState && doc.coreState[1].active){\n    var players = doc.coreState[1].players;\n    for(id in players){\n       emit(id, doc);\n    }\n    if(doc.coreState[1].host){\n       emit(doc.coreState[1].host, doc);\n    }\n  }\n}"
             },
-            byPlayerInactive:{
-              map: "function(doc){\n if(doc.coreState && !doc.coreState.active){\n    var players = doc.coreState.players;\n    for(id in players){\n       emit(id, doc);\n    }\n }\n}"
+            "byPlayerInactive": {
+              "map": "function(doc) {\n  if(doc.coreState && !doc.coreState[1].active){\n    var players = doc.coreState[1].players;\n    for(id in players){\n       emit(id, doc);\n    }\n    if(doc.coreState[1].host){\n       emit(doc.coreState[1].host, doc);\n    }\n  }\n}"
             }
           }
         }, "_design/instances");

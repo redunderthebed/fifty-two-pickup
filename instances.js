@@ -83,6 +83,38 @@ games.getGames().then(function(gameStubList){
         })
     });
 })
+
+function saveInstance(instance){
+    var stub = makeInstanceStubFromInstance(instance);
+
+
+    return saveInstanceStub(stub).then(function(response){
+
+        //Update the revision number of the instance object that was passed in
+        instance._rev = response[0].rev;
+    });
+}
+
+function makeInstanceStubFromInstance(instance){
+    var stub = makeInstanceStub(instance.game._id, instance.game, instance.game.core);
+    stub._id = instance._id;
+    stub._rev = instance._rev;
+    return stub;
+}
+
+function makeInstanceStub(gameId, game, core){
+    var stub = {
+        gameId: gameId,
+        gameState: JSON.parse(state.stringify(game)),
+        coreState: JSON.parse(state.stringify(core))
+    }
+    return stub;
+}
+
+function saveInstanceStub(stub){
+    return db.insert(stub);
+}
+
 /**
  * Create a new instance of the given gameTemplate
  * @param gameTemplate
@@ -101,13 +133,9 @@ function newInstance(gameTemplate){
         try {
 
             //Create a stub with only states and gameId for the database
-            var stub = {
-                gameId: gameTemplate._id,
-                gameState: JSON.parse(state.stringify(game)),
-                coreState: JSON.parse(state.stringify(core))
-            };
+            var stub = makeInstanceStub(gameTemplate._id, game, core);
 
-            db.insert(stub).spread(function(body){
+            saveInstanceStub(stub).spread(function(body){
                 //insert the core into the game
                 game.core = core;
 
@@ -116,7 +144,7 @@ function newInstance(gameTemplate){
                     _id: body.id,
                     _rev: body.rev,
                     game: game
-                }
+                };
 
                 console.log("Instance created");
 
@@ -144,13 +172,16 @@ function getInstance(id){
         var inst = instances[id];
         //Return if found
         if (inst) {
+            console.log('retrieved instance', id, 'from memory');
+            console.log(inst.game.core.getPlayers());
             resolve(inst);
         }
         else {
-            console.log("Instance not in memory");
+            console.log("Instance", id, " not in memory");
             //Retrieve from database if not
             db.get(id).spread(function(data){
-                console.log("retrieved instance from db");
+                console.log("retrieved instance", id, "from db");
+                console.log(data);
                 if(data.gameId) {
                     var template = games.getGame(data.gameId).then(function(template){
                         var game = new template();
@@ -170,11 +201,11 @@ function getInstance(id){
                     });
                 }
                 else{
-                    reject("No game with id of " + id + " found");
+                    reject("No instance with id of " + id + " found");
                 }
             }).catch(function(err){
-                console.log("game could not be retrieved because: " + err.message);
-                reject("No game with id of " + id + " found");
+                console.log("Instance could not be retrieved because: " + err.message);
+                reject("No instance with id of " + id + " found");
             });
         }
     });
@@ -195,7 +226,10 @@ secureRouter.post('/', function(req, res, next){
             instance.game.core.setHost(req.tokenData.id);
             instance.game.init();
             console.log("new instance id", instance._id);
-            qr.created(res, next, {_id: instance._id, _rev: instance._rev});
+            saveInstance(instance).then(function(response){
+
+                qr.created(res, next, {_id: instance._id, _rev: instance._rev});
+            });
         }).catch(function(err){
             qr.failed(res, next, err);
         })
@@ -205,12 +239,40 @@ secureRouter.post('/', function(req, res, next){
 });
 
 secureRouter.get('/active', function(req, res, next){
-    console.log("request for active instances recieved");
+    console.log("request for active instances received from user", req.tokenData.id);
     db.view('instances', 'byPlayerActive', {key: req.tokenData.id}).spread(function(body){
-        console.log(body);
-        qr.ok(res, next, body.rows);
+        var insts = [];
+        var promises = [];
+
+        body.rows.forEach(function(v, i, a){
+            console.log(i);
+            var p =
+                getInstance(v.id).then(function(inst) {
+                    console.log("Got that game you asked for");
+
+
+                    var stub = {
+                        _id: inst._id,
+                        _rev: inst._rev,
+                        gameName: inst.game.gameName,
+                        open: inst.game.core.getState().open,
+                        started: inst.game.core.getState().started,
+                        playerCount: inst.game.core.getNumPlayers(),
+                        maxPlayers: inst.game.maxPlayers,
+                        minPlayers: inst.game.minPlayers
+                    };
+                    insts.push(stub);
+                }).catch(function(err){
+                    console.log("had a problem: ", err);
+                });
+            promises.push(p);
+        });
+        Promise.all(promises).then(function(){
+            qr.ok(res, next, insts);
+        });
+
     }).catch(function(err){
-        console.log(err);
+        console.log("Error:", err);
         qr.failed(res, next, err);
     });
 })
@@ -311,6 +373,17 @@ secureRouter.patch('/:instId/dev/start', function(req, res, next){
     });
 });
 
+secureRouter.delete('/:instId/', function(req, res, next){
+    return getInstance(req.params.instId).then(function(instance){
+        console.log(instance);
+        return db.destroy(instance._id, instance._rev).then(function(response) {
+            delete instances[req.params.instId];
+            qr.ok(res, next);
+        }).catch(function(error){
+            qr.failed(res, next, error.message);
+        });
+    });
+});
 module.exports = {
     newInstance: newInstance,
     getInstance: getInstance,

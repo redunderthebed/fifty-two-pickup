@@ -111,6 +111,7 @@ function Core(savedState){
         else{
             throw new Error("Player capacity exceeded");
         }
+        console.log("Now there are " + this.getNumPlayers() + " and a limit of " + game.maxPlayers);
     };
     this.getPlayer = function(id){
         return this._state.players[id];
